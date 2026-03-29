@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CONCURSITO de JAN</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        
+        <!-- PANTALLA DE LOGIN -->
+        <div id="view-login" class="view">
+            <div class="header">
+                <h2>Acceso Restringido</h2>
+            </div>
+            <div class="menu-box">
+                <p>Introduce la contraseña para acceder a CONCURSITO de JAN.</p>
+                <input type="password" id="login-pass" class="room-input" placeholder="Contraseña..." onkeydown="if(event.key==='Enter') app.login()">
+                <button class="btn-primary" onclick="app.login()" style="width: 100%; margin-top: 15px;">Acceder</button>
+                <div id="login-error" style="color: #ff5252; margin-top: 10px; font-weight: bold; display: none;">Contraseña incorrecta</div>
+            </div>
+        </div>
+
+        <!-- MAIN MENU -->
+        <div id="view-menu" class="view" style="display: none;">
+            <h1 class="logo">CONCURSITO <span>de JAN</span></h1>
+            <div class="menu-buttons">
+                <button onclick="app.showAndSetup('host-setup')">Panel de Control (iPad)</button>
+                <button onclick="app.showAndSetup('stream-setup')">Vista OBS (Stream)</button>
+                <button onclick="app.showAndSetup('editor')">Editor de Preguntas</button>
+            </div>
+        </div>
+
+        <!-- EDITOR DE PREGUNTAS -->
+        <div id="view-editor" class="view" style="display: none;">
+            <div class="header">
+                <h2>Editor de Preguntas</h2>
+                <button class="btn-secondary small-btn" onclick="app.showView('menu')">Volver al Menú</button>
+            </div>
+            
+            <div class="editor-groups" style="background:var(--bg-card); padding:15px; border-radius:12px; margin-bottom:20px; display:flex; gap:10px; align-items:center;">
+                <label style="font-weight:bold;">Tus Grupos: </label>
+                <select id="edit-group-select" onchange="editor.onSelectGroup()" style="flex:1; margin-bottom:0;"></select>
+                <button class="btn-secondary small-btn" onclick="editor.newGroup()">Nuevo Grupo</button>
+                <button class="btn-danger small-btn" onclick="editor.deleteGroup()">Borrar Grupo</button>
+            </div>
+
+            <div class="editor-container">
+                <div class="add-question-form">
+                    <h3>Nueva Pregunta</h3>
+                    <textarea id="edit-q" placeholder="Escribe la pregunta aquí..."></textarea>
+                    
+                    <div class="opt-input"><span class="lbl-opt">A</span><input type="text" id="edit-opt0" placeholder="Opción A"></div>
+                    <div class="opt-input"><span class="lbl-opt">B</span><input type="text" id="edit-opt1" placeholder="Opción B"></div>
+                    <div class="opt-input"><span class="lbl-opt">C</span><input type="text" id="edit-opt2" placeholder="Opción C"></div>
+                    <div class="opt-input"><span class="lbl-opt">D</span><input type="text" id="edit-opt3" placeholder="Opción D"></div>
+                    
+                    <div class="correct-select-box">
+                        <label>Respuesta Correcta:</label>
+                        <select id="edit-correct">
+                            <option value="0">Opción A</option>
+                            <option value="1">Opción B</option>
+                            <option value="2">Opción C</option>
+                            <option value="3">Opción D</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" onclick="editor.addQuestion()">Guardar Pregunta</button>
+                </div>
+                
+                <div class="questions-list-container">
+                    <h3>Preguntas Guardadas</h3>
+                    <div id="questions-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HOST SETUP -->
+        <div id="view-host-setup" class="view" style="display: none;">
+            <div class="header">
+                <h2>Host: Crear Sala</h2>
+                <button class="btn-secondary small-btn" onclick="app.showView('menu')">Volver</button>
+            </div>
+            <div class="setup-box">
+                <div style="margin-bottom: 30px; text-align: left;">
+                    <label style="font-weight:bold; margin-bottom: 10px; display:block;">1. Selecciona el Grupo a Jugar:</label>
+                    <select id="host-group-select" onchange="host.selectGroup(this.value)"></select>
+                </div>
+
+                <p>2. Tu código de sala seguro es:</p>
+                <h1 id="host-room-code" class="room-code">Cargando...</h1>
+                <p class="hint">Escribe este código en la Vista OBS para conectar.</p>
+                <div class="status-box" id="host-setup-status">Esperando a OBS...</div>
+                <button id="btn-start-host" class="btn-primary" disabled onclick="host.startGame()">Empezar Juego</button>
+            </div>
+        </div>
+
+        <!-- HOST GAME -->
+        <div id="view-host-game" class="view" style="display: none;">
+            <div class="host-header">
+                <h3>Panel de Control</h3>
+                <span id="host-status" class="status connected">● Conectado a OBS</span>
+                <span class="q-counter" id="host-q-counter">Pregunta 1/1</span>
+            </div>
+            <div class="host-controls">
+                <div id="host-current-q" class="current-q-box"></div>
+                
+                <div class="control-grid">
+                    <button class="opt-btn" id="btn-h-opt0" onclick="host.selectOption(0)">A</button>
+                    <button class="opt-btn" id="btn-h-opt1" onclick="host.selectOption(1)">B</button>
+                    <button class="opt-btn" id="btn-h-opt2" onclick="host.selectOption(2)">C</button>
+                    <button class="opt-btn" id="btn-h-opt3" onclick="host.selectOption(3)">D</button>
+                </div>
+                
+                <div class="lifeline-controls">
+                    <h3>Comodines</h3>
+                    <div class="h-lifelines">
+                        <button id="h-life-0" onclick="host.playRoulette()">🎡 Ruleta</button>
+                        <button id="h-life-1" onclick="host.playLlamada()">📞 Llamada</button>
+                        <button id="h-life-2" onclick="host.play5050()">💀 50/50</button>
+                        <button id="h-life-3" onclick="host.playDescarte()">❌ Descarte</button>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-primary action-btn" onclick="host.revealCorrect()">Revelar Respuesta Correcta</button>
+                    <button class="btn-secondary action-btn" onclick="host.nextQuestion()">Siguiente Pregunta ➔</button>
+                </div>
+                <button class="btn-danger small-btn" style="margin-top: 30px" onclick="location.reload()">Salir del Juego</button>
+            </div>
+        </div>
+
+        <!-- STREAM SETUP -->
+        <div id="view-stream-setup" class="view" style="display: none;">
+            <div class="header">
+                <h2>Conectar OBS al Panel</h2>
+                <button class="btn-secondary small-btn" onclick="app.showView('menu')">Volver</button>
+            </div>
+            <div class="setup-box">
+                <p>Introduce el código que aparece en tu iPad:</p>
+                <input type="number" id="stream-room-input" placeholder="Ej: 1234">
+                <button class="btn-primary" onclick="stream.connectToHost()">Conectar</button>
+                <div id="stream-error" class="error-msg"></div>
+            </div>
+        </div>
+
+        <!-- STREAM GAME (OBS) -->
+        <div id="view-stream-game" class="view chroma-target" style="display: none;">
+            
+            <div id="s-roulette-overlay" class="roulette-overlay" style="display: none;">
+                <div class="pointer">▼</div>
+                <div class="roulette-wheel" id="r-wheel">
+                    <div class="r-num" style="--r: 18deg;">0</div>
+                    <div class="r-num" style="--r: 54deg;">1</div>
+                    <div class="r-num" style="--r: 90deg;">2</div>
+                    <div class="r-num" style="--r: 126deg;">0</div>
+                    <div class="r-num" style="--r: 162deg;">1</div>
+                    <div class="r-num" style="--r: 198deg;">2</div>
+                    <div class="r-num" style="--r: 234deg;">0</div>
+                    <div class="r-num" style="--r: 270deg;">1</div>
+                    <div class="r-num" style="--r: 306deg;">2</div>
+                    <div class="r-num" style="--r: 342deg;">3</div>
+                </div>
+            </div>
+
+            <img src="Logo.png" class="stream-logo-img" alt="CONCURSITO de JAN">
+            
+            <div id="s-timer-overlay" class="timer-overlay" style="display: none;">
+                <div class="timer-circle" id="s-timer-text">30</div>
+            </div>
+
+            <div class="stream-lifelines">
+                <div class="lifeline" id="s-life-0">
+                    <span class="icon">🎡</span>
+                </div>
+                <div class="lifeline" id="s-life-1">📞</div>
+                <div class="lifeline" id="s-life-2">💀</div>
+                <div class="lifeline" id="s-life-3">❌</div>
+            </div>
+
+            <div class="stream-layout">
+                <div class="progress-bar-container">
+                    <div id="s-progress" class="quiz-progress">
+                        <div class="progress-step empty">1</div>
+                        <div class="progress-step empty">2</div>
+                        <div class="progress-step empty">3</div>
+                        <div class="progress-step empty">4</div>
+                        <div class="progress-step empty">5</div>
+                        <div class="progress-step empty">6</div>
+                        <div class="progress-step empty">7</div>
+                        <div class="progress-step empty">8</div>
+                        <div class="progress-step empty">9</div>
+                        <div class="progress-step empty">10</div>
+                        <div class="progress-step empty">11</div>
+                        <div class="progress-step empty">12</div>
+                        <div class="progress-step empty">13</div>
+                        <div class="progress-step empty">14</div>
+                        <div class="progress-step empty">15</div>
+                    </div>
+                </div>
+                <div class="question-container">
+                    <div class="question-box" id="s-question">Esperando pregunta...</div>
+                </div>
+                <div class="options-grid">
+                    <div class="option" id="s-opt0"><span class="dot-letter">• A:</span> <span class="text">...</span></div>
+                    <div class="option" id="s-opt1"><span class="dot-letter">• B:</span> <span class="text">...</span></div>
+                    <div class="option" id="s-opt2"><span class="dot-letter">• C:</span> <span class="text">...</span></div>
+                    <div class="option" id="s-opt3"><span class="dot-letter">• D:</span> <span class="text">...</span></div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
