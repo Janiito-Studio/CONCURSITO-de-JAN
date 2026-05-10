@@ -35,11 +35,22 @@
 
         <!-- MAIN MENU -->
         <div id="view-menu" class="view" style="display: none;">
-            <h1 class="logo">CONCURSITO <span>de JAN</span></h1>
-            <div class="menu-buttons">
-                <button onclick="app.showAndSetup('host-setup')">Panel de Control (iPad)</button>
-                <button onclick="app.showAndSetup('stream-setup')">Vista OBS (Stream)</button>
-                <button onclick="app.showAndSetup('editor')">Editor de Preguntas</button>
+            <div class="menu-box">
+                <h1 class="logo" style="margin: 0 0 30px 0; font-size: clamp(32px, 8vw, 56px);">CONCURSITO <span>de JAN</span></h1>
+                <div class="menu-buttons">
+                    <button onclick="app.showAndSetup('host-setup')">
+                        <span style="display:block; font-size: 14px; opacity: 0.6; margin-bottom: 4px; font-weight: 400;">PARA EL HOST</span>
+                        Panel de Control (iPad)
+                    </button>
+                    <button onclick="app.showAndSetup('stream-setup')">
+                        <span style="display:block; font-size: 14px; opacity: 0.6; margin-bottom: 4px; font-weight: 400;">PARA EL STREAM</span>
+                        Vista OBS (Stream)
+                    </button>
+                    <button onclick="app.showAndSetup('editor')">
+                        <span style="display:block; font-size: 14px; opacity: 0.6; margin-bottom: 4px; font-weight: 400;">GESTIÓN</span>
+                        Editor de Preguntas
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -341,6 +352,13 @@
             </div>
         </div>
 
+    </div> <!-- Fin de #app -->
+
+    <!-- VISTA DE FINALIZACIÓN (LOGO PULSANDO) - FUERA DE #APP PARA CENTRADO ABSOLUTO -->
+    <div id="view-finish" class="view" style="display: none;" onclick="if(typeof host !== 'undefined') host.resetToMenu()">
+        <div class="pulse-wrapper">
+            <img src="Logo.png" class="finish-logo" alt="Logo">
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>

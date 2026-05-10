@@ -11,9 +11,9 @@
     --accent-glow: rgba(245, 158, 11, 0.4);
     --glass: rgba(255,255,255,0.07);
     --glass-border: rgba(255,255,255,0.12);
-    --color-selected: #a5d6a7;
-    --color-correct: #2e7d32;
-    --color-incorrect: #b71c1c;
+    --color-selected: #4ade80;
+    --color-correct: #059669;
+    --color-incorrect: #e11d48;
     --font-main: 'Outfit', 'Montserrat', sans-serif;
 }
 
@@ -23,17 +23,18 @@ body {
     font-family: var(--font-main);
     background-color: var(--bg-color);
     background-image:
-        radial-gradient(circle at 15% 15%, rgba(124,58,237,0.25) 0%, transparent 50%),
-        radial-gradient(circle at 85% 85%, rgba(245,158,11,0.15) 0%, transparent 50%);
+        radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.1) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(245, 158, 11, 0.08) 0%, transparent 40%);
+    background-attachment: fixed;
     color: var(--text-color);
     min-height: 100vh;
-    transition: background 0.3s;
+    overflow-x: hidden;
 }
 
 body.chroma-bg-active {
     background: transparent !important;
 }
-body.chroma-bg-active .view:not(#view-stream-game) {
+body.chroma-bg-active .view:not(#view-stream-game):not(#view-finish) {
     display: none !important;
 }
 
@@ -146,13 +147,13 @@ select option { background: #1c1c2e; }
 
 /* ── MENU ── */
 .logo {
-    text-align: center;
     font-size: 56px;
     font-weight: 900;
-    margin: 8vh auto 50px;
+    margin: 0 auto 35px;
     line-height: 1.1;
-    letter-spacing: -1px;
-    text-shadow: 0 0 60px var(--primary-glow);
+    letter-spacing: -1.5px;
+    text-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 60px var(--primary-glow);
+    text-align: center;
 }
 .logo span {
     background: linear-gradient(135deg, var(--accent), #ff9f43);
@@ -386,9 +387,9 @@ select option { background: #1c1c2e; }
 .action-btn { flex: 1; padding: 18px; font-size: 16px; max-width: 320px; border-radius: 14px; }
 
 /* ── State Colors ── */
-.selected { background-color: rgba(165,214,167,0.15) !important; color: #a5d6a7 !important; border-color: #a5d6a7 !important; font-weight: 900; }
-.correct { background: linear-gradient(135deg, #0f3a15, #1b5e20) !important; color: #a5d6a7 !important; border-color: #4caf50 !important; font-weight: 900; box-shadow: 0 0 30px rgba(76,175,80,0.6), inset 0 0 20px rgba(76,175,80,0.3) !important; }
-.incorrect { background: linear-gradient(135deg, #4a0f0f, #b71c1c) !important; color: #ffcdd2 !important; border-color: #ff5252 !important; font-weight: 900; box-shadow: 0 0 30px rgba(244,67,54,0.6) !important; }
+.selected { background-color: rgba(6, 78, 59, 0.9) !important; color: #4ade80 !important; border-color: #4ade80 !important; font-weight: 900; box-shadow: 0 0 20px rgba(74, 222, 128, 0.3) !important; }
+.correct { background: linear-gradient(135deg, #064e3b, #059669) !important; color: #ffffff !important; border-color: #34d399 !important; font-weight: 900; box-shadow: 0 0 40px rgba(16, 185, 129, 0.8), inset 0 0 20px rgba(16, 185, 129, 0.4) !important; }
+.incorrect { background: linear-gradient(135deg, #4c0519, #e11d48) !important; color: #ffffff !important; border-color: #fb7185 !important; font-weight: 900; box-shadow: 0 0 30px rgba(225, 29, 72, 0.7) !important; }
 
 /* ──────────────────────────────────────── */
 /*  STREAM GAME VIEW (OBS)                */
@@ -545,7 +546,7 @@ select option { background: #1c1c2e; }
     content: "";
     position: absolute;
     height: 4px;
-    background: linear-gradient(to right, #2e7d32 0%, #2e7d32 var(--prog-line, 0%), rgba(255,255,255,0.1) var(--prog-line, 0%));
+    background: linear-gradient(to right, #059669 0%, #059669 var(--prog-line, 0%), rgba(255,255,255,0.1) var(--prog-line, 0%));
     width: 100%;
     z-index: 1;
     border-radius: 2px;
@@ -579,7 +580,7 @@ select option { background: #1c1c2e; }
     color: var(--accent);
     font-size: 11px;
 }
-.progress-step.correct { background: #2e7d32; border-color: #4caf50; color: white; box-shadow: 0 0 10px rgba(76,175,80,0.4); }
+.progress-step.correct { background: #059669; border-color: #34d399; color: white; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
 .progress-step.incorrect { background: #b71c1c; border-color: #ef5350; color: white; box-shadow: 0 0 10px rgba(183,28,28,0.5); }
 
 /* Question Box */
@@ -625,3 +626,50 @@ select option { background: #1c1c2e; }
 .option.selected .dot-letter,
 .option.correct .dot-letter,
 .option.incorrect .dot-letter { color: inherit; }
+
+/* ── Final Animations ── */
+@keyframes logo-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.88); }
+    100% { transform: scale(1); }
+}
+
+.pulse-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: logo-pulse 4s ease-in-out infinite;
+}
+
+#view-finish {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: transparent;
+    z-index: 999999 !important;
+    cursor: pointer;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    /* Grid para CENTRADO ABSOLUTO */
+    place-items: center !important;
+}
+
+
+
+.finish-logo {
+    max-width: 900px;
+    max-height: 80vh;
+    width: 85%;
+    height: auto;
+    filter: drop-shadow(0 0 70px var(--primary-glow));
+    margin: 0 !important;
+    display: block !important;
+}
+
+

@@ -634,9 +634,18 @@ const app = {
         }
     },
     showView: (viewId) => {
-        document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
-        document.getElementById('view-' + viewId).style.display = 'block';
-        if (viewId === 'stream-game') {
+        const targetId = 'view-' + viewId;
+        const targetEl = document.getElementById(targetId);
+        if (!targetEl) return;
+
+        document.querySelectorAll('.view').forEach(v => {
+            v.style.display = 'none';
+        });
+
+        if (viewId === 'finish') targetEl.style.display = 'grid';
+        else targetEl.style.display = 'block';
+        
+        if (viewId === 'stream-game' || viewId === 'finish') {
             document.body.classList.add('chroma-bg-active');
         } else {
             document.body.classList.remove('chroma-bg-active');
@@ -766,30 +775,41 @@ const host = {
         }
         document.getElementById('host-room-code').innerText = savedCode;
 
-        if (peerInstance) peerInstance.destroy();
-        peerInstance = new Peer(PREFIX + savedCode);
+        if (!peerInstance) {
+            peerInstance = new Peer(PREFIX + savedCode);
 
-        peerInstance.on('open', id => {
-            console.log('Host creado:', id);
-            document.getElementById('host-setup-status').innerText = 'Sala creada. Esperando a que OBS se conecte...';
-        });
+            peerInstance.on('open', id => {
+                console.log('Host creado:', id);
+                document.getElementById('host-setup-status').innerText = 'Sala creada. Esperando a que OBS se conecte...';
+            });
 
-        peerInstance.on('connection', conn => {
-            connection = conn;
-            document.getElementById('host-setup-status').innerText = '¡OBS Conectado exitosamente!';
-            document.getElementById('host-setup-status').style.backgroundColor = '#2e7d32'; // dark green
-            document.getElementById('btn-start-host').disabled = false;
+            peerInstance.on('connection', conn => {
+                connection = conn;
+                document.getElementById('host-setup-status').innerText = '¡OBS Conectado exitosamente!';
+                document.getElementById('host-setup-status').style.backgroundColor = '#2e7d32'; // dark green
+                document.getElementById('btn-start-host').disabled = false;
 
-            // Re-sync on reload
-            if (document.getElementById('view-host-game').style.display === 'block' && activeQuestions.length > 0) {
-                host.sendState();
+                // Re-sync on reload
+                if (document.getElementById('view-host-game').style.display === 'block' && activeQuestions.length > 0) {
+                    host.sendState();
+                }
+            });
+
+            peerInstance.on('error', err => {
+                document.getElementById('host-setup-status').innerText = 'Error: ' + err.type;
+                document.getElementById('host-setup-status').style.backgroundColor = '#b71c1c'; // red
+            });
+        } else {
+            if (connection && connection.open) {
+                document.getElementById('host-setup-status').innerText = '¡OBS Conectado exitosamente!';
+                document.getElementById('host-setup-status').style.backgroundColor = '#2e7d32';
+                document.getElementById('btn-start-host').disabled = false;
+            } else {
+                document.getElementById('host-setup-status').innerText = 'Sala creada. Esperando a que OBS se conecte...';
+                document.getElementById('host-setup-status').style.backgroundColor = 'transparent';
+                document.getElementById('btn-start-host').disabled = true;
             }
-        });
-
-        peerInstance.on('error', err => {
-            document.getElementById('host-setup-status').innerText = 'Error: ' + err.type;
-            document.getElementById('host-setup-status').style.backgroundColor = '#b71c1c'; // red
-        });
+        }
     },
     selectGroup: (id) => {
         playingGroupId = id;
@@ -884,7 +904,8 @@ const host = {
             timerEndTime: null,
             isGameOver: false,
             correctCount: 0,
-            incorrectCount: 0
+            incorrectCount: 0,
+            view: 'game'
         };
         host.renderQ();
         host.sendState();
@@ -1035,8 +1056,40 @@ const host = {
             let textGrade = grade >= 9 ? "Excelente" : grade >= 7 ? "Notable" : grade >= 6 ? "Bien" : grade >= 5 ? "Suficiente" : "Suspenso";
             let color = grade >= 5 ? "#a5d6a7" : "#ff5252";
             let title = grade >= 5 ? "¡Juego Terminado!" : "¡Has Perdido!";
-            document.getElementById('host-current-q').innerHTML = `<h2 style="color:${color};">${title}</h2><p>Aciertos: ${corrects} | Fallos: ${incorrects} <br> Nota: ${grade.toFixed(1)} (${textGrade})</p>`;
+            document.getElementById('host-current-q').innerHTML = `
+                <h2 style="color:${color};">${title}</h2>
+                <p style="font-size:16px; margin-bottom:15px;">Aciertos: ${corrects} | Fallos: ${incorrects} <br> Nota: ${grade.toFixed(1)} (${textGrade})</p>
+                <button class="btn-primary" onclick="host.finishGame()" style="width:100%; padding:20px; font-size:18px;">FINALIZAR</button>
+            `;
         }
+    },
+    finishGame: () => {
+        // En el OBS queremos que se vea el logo
+        currentState.view = 'finish';
+        currentState.isGameOver = false; 
+        host.sendState();
+        
+        // En el iPad nos vamos directamente al menú de selección
+        currentQIndex = 0;
+        app.showAndSetup('host-setup');
+    },
+    resetToMenu: () => {
+        currentState = {
+            qIndex: 0,
+            selected: null,
+            revealed: false,
+            lifelines: [false, false, false, false],
+            rouletteResult: null,
+            rouletteState: null,
+            eliminatedOptions: [],
+            answersHistory: [],
+            timerEndTime: null,
+            isGameOver: false,
+            view: 'setup'
+        };
+        currentQIndex = 0;
+        host.sendState();
+        app.showAndSetup('host-setup');
     },
     forceCorrect: (index) => {
         if (activeQuestions[currentQIndex]) {
@@ -1126,6 +1179,13 @@ const stream = {
         
         window.streamState = state;
         
+        const targetView = (state.view === 'finish' || state.view === 'setup') ? 'finish' : 'stream-game';
+        app.showView(targetView);
+
+        if (targetView === 'finish') return;
+        
+        if (state.view === 'finish') return;
+
         if (state.isGameOver) {
             document.getElementById('s-gameover-overlay').style.display = 'flex';
             document.getElementById('s-go-correct').innerText = state.correctCount;
@@ -1222,30 +1282,32 @@ const stream = {
         }
         progEl.innerHTML = progHtml;
 
-        document.getElementById('s-question').innerText = questionData.q;
+        if (questionData) {
+            document.getElementById('s-question').innerText = questionData.q;
 
-        [0, 1, 2, 3].forEach(i => {
-            const optEl = document.getElementById('s-opt' + i);
-            optEl.querySelector('.text').innerText = questionData.opts[i];
+            [0, 1, 2, 3].forEach(i => {
+                const optEl = document.getElementById('s-opt' + i);
+                optEl.querySelector('.text').innerText = questionData.opts[i];
 
-            optEl.className = 'option';
+                optEl.className = 'option';
 
-            if (state.eliminatedOptions && state.eliminatedOptions.includes(i) && state.rouletteState !== 'spinning') {
-                optEl.classList.add('eliminated');
-            }
-
-            if (state.revealed) {
-                if (i === questionData.correct) {
-                    optEl.classList.add('correct');
-                } else if (i === state.selected && state.selected !== questionData.correct) {
-                    optEl.classList.add('incorrect');
+                if (state.eliminatedOptions && state.eliminatedOptions.includes(i) && state.rouletteState !== 'spinning') {
+                    optEl.classList.add('eliminated');
                 }
-            } else {
-                if (i === state.selected) {
-                    optEl.classList.add('selected');
+
+                if (state.revealed) {
+                    if (i === questionData.correct) {
+                        optEl.classList.add('correct');
+                    } else if (i === state.selected && state.selected !== questionData.correct) {
+                        optEl.classList.add('incorrect');
+                    }
+                } else {
+                    if (i === state.selected) {
+                        optEl.classList.add('selected');
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 };
 
