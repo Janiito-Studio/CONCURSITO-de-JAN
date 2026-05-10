@@ -1059,7 +1059,7 @@ const host = {
             document.getElementById('host-current-q').innerHTML = `
                 <h2 style="color:${color};">${title}</h2>
                 <p style="font-size:16px; margin-bottom:15px;">Aciertos: ${corrects} | Fallos: ${incorrects} <br> Nota: ${grade.toFixed(1)} (${textGrade})</p>
-                <button class="btn-primary" onclick="host.finishGame()" style="width:100%; padding:20px; font-size:18px;">FINALIZAR</button>
+                <button class="btn-primary" onclick="host.finishGame()" style="width:100%; padding:20px; font-size:18px;">VOLVER A JUGAR</button>
             `;
         }
     },
@@ -1119,6 +1119,54 @@ const host = {
         currentState.blackout = !currentState.blackout;
         host.sendState();
     },
+    clearSelection: () => {
+        currentState.selected = null;
+        host.renderQ();
+        host.sendState();
+    },
+    sendAlert: (msg) => {
+        currentState.alertMsg = msg;
+        host.sendState();
+    },
+    clearAlert: () => {
+        currentState.alertMsg = null;
+        host.sendState();
+    },
+    triggerDance: () => {
+        currentState.dance = !currentState.dance;
+        host.sendState();
+    },
+    triggerSpin: () => {
+        currentState.spin = !currentState.spin;
+        host.sendState();
+    },
+    triggerMirror: () => {
+        currentState.mirror = !currentState.mirror;
+        host.sendState();
+    },
+    triggerTrollConfetti: () => {
+        currentState.trollConfetti = (currentState.trollConfetti || 0) + 1;
+        host.sendState();
+    },
+    triggerBlur: () => { currentState.blur = !currentState.blur; host.sendState(); },
+    triggerShrink: () => { currentState.shrink = !currentState.shrink; host.sendState(); },
+    triggerInvert: () => { currentState.invert = !currentState.invert; host.sendState(); },
+    triggerEarthquake: () => { currentState.earthquake = !currentState.earthquake; host.sendState(); },
+    triggerParty: () => { currentState.party = !currentState.party; host.sendState(); },
+    triggerFakeDisconnect: () => { currentState.fakeDisconnect = !currentState.fakeDisconnect; host.sendState(); },
+    triggerFlyAway: () => { currentState.flyAway = !currentState.flyAway; host.sendState(); },
+    triggerUglyFont: () => { currentState.uglyFont = !currentState.uglyFont; host.sendState(); },
+    triggerInvisibleText: () => { currentState.invisibleText = !currentState.invisibleText; host.sendState(); },
+    triggerMatrix: () => { currentState.matrixMode = !currentState.matrixMode; host.sendState(); },
+    triggerJumpscare: () => { 
+        currentState.jumpscare = true; 
+        host.sendState(); 
+        setTimeout(() => { currentState.jumpscare = false; host.sendState(); }, 500); 
+    },
+    triggerScreamer: () => {
+        currentState.screamerTrigger = (currentState.screamerTrigger || 0) + 1;
+        host.sendState();
+    },
     sendState: () => {
         if (connection) {
             connection.send({
@@ -1164,6 +1212,33 @@ const stream = {
             document.getElementById('stream-error').style.color = '#ff5252';
         });
     },
+    launchScreamer: () => {
+        const screamerEl = document.getElementById('screamer-overlay');
+        const screamerAudio = document.getElementById('screamer-audio');
+        if (!screamerEl) return;
+
+        screamerEl.className = 'screamer-visible';
+        if (screamerAudio) {
+            screamerAudio.volume = 1.0;
+            screamerAudio.currentTime = 0;
+            const playPromise = screamerAudio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.log("Autoplay prevented. Click the screen to enable audio.");
+                    // Si falla el audio, al menos que se vea el bicho
+                });
+            }
+        }
+
+        console.log("SCREAMER LAUNCHED!");
+        setTimeout(() => {
+            screamerEl.className = 'screamer-hidden';
+            if (screamerAudio) {
+                screamerAudio.pause();
+                screamerAudio.volume = 0;
+            }
+        }, 2000); // 2 seconds for full scream
+    },
     renderUpdate: (data) => {
         const { state, questionData } = data;
         
@@ -1175,6 +1250,89 @@ const stream = {
             if (typeof confetti === 'function') {
                 confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, zIndex: 9999 });
             }
+        }
+        if (window.streamState && window.streamState.trollConfetti !== state.trollConfetti) {
+            if (typeof confetti === 'function') {
+                confetti({ particleCount: 100, spread: 100, origin: { y: 0.6 }, colors: ['#000000', '#ff0000', '#555555'], zIndex: 9999 });
+            }
+        }
+        
+        if (state.blackout) {
+            document.body.classList.add('blackout');
+        } else {
+            document.body.classList.remove('blackout');
+        }
+
+        if (state.mirror) {
+            document.body.style.transform = 'scaleX(-1)';
+        } else {
+            document.body.style.transform = '';
+        }
+        
+        const qContainer = document.querySelector('.question-container');
+        if (qContainer) {
+            if (state.spin) qContainer.classList.add('troll-spin');
+            else qContainer.classList.remove('troll-spin');
+            
+            if (state.blur) qContainer.classList.add('troll-blur');
+            else qContainer.classList.remove('troll-blur');
+        }
+
+        const optContainer = document.querySelector('.options-grid');
+        if (optContainer) {
+            if (state.dance) optContainer.classList.add('troll-dance');
+            else optContainer.classList.remove('troll-dance');
+            
+            if (state.shrink) optContainer.classList.add('troll-shrink');
+            else optContainer.classList.remove('troll-shrink');
+        }
+        
+        if (state.earthquake) document.body.classList.add('troll-earthquake');
+        else document.body.classList.remove('troll-earthquake');
+
+        if (state.party) document.body.classList.add('troll-party');
+        else document.body.classList.remove('troll-party');
+
+        if (state.invert) document.body.classList.add('troll-invert');
+        else document.body.classList.remove('troll-invert');
+        
+        if (state.flyAway) document.body.classList.add('troll-fly');
+        else document.body.classList.remove('troll-fly');
+
+        if (state.uglyFont) document.body.classList.add('troll-uglyfont');
+        else document.body.classList.remove('troll-uglyfont');
+
+        if (state.invisibleText) document.body.classList.add('troll-invisible');
+        else document.body.classList.remove('troll-invisible');
+
+        if (state.matrixMode) document.body.classList.add('troll-matrix');
+        else document.body.classList.remove('troll-matrix');
+
+        if (state.jumpscare) document.body.classList.add('troll-jumpscare');
+        else document.body.classList.remove('troll-jumpscare');
+
+        if (window.streamState && window.streamState.screamerTrigger !== state.screamerTrigger) {
+            stream.launchScreamer();
+        }
+
+        let alertEl = document.getElementById('stream-alert');
+        if (!alertEl) {
+            alertEl = document.createElement('div');
+            alertEl.id = 'stream-alert';
+            document.body.appendChild(alertEl);
+        }
+        if (state.fakeDisconnect) {
+            alertEl.innerHTML = "⚠️ ERROR DE CONEXIÓN ⚠️<br><span style='font-size:20px; font-weight:normal;'>Reconectando con el servidor...</span>";
+            alertEl.style.display = 'block';
+            alertEl.style.background = 'black';
+            alertEl.style.border = '3px solid red';
+        } else if (state.alertMsg) {
+            alertEl.innerText = state.alertMsg;
+            alertEl.style.display = 'block';
+            alertEl.style.background = 'rgba(225, 29, 72, 0.95)';
+            alertEl.style.border = '3px solid #ffb3c6';
+        } else {
+            alertEl.style.display = 'none';
         }
         
         window.streamState = state;
